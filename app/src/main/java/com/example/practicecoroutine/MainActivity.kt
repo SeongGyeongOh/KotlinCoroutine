@@ -29,13 +29,26 @@ class MainActivity : AppCompatActivity() {
 
         Log.d("currentThread", "${Thread.currentThread().name}")
 
-        lifecycleScope.launch {
+        btn.setOnClickListener {
+//            lifecycleScope.launch {
+//                val job1 = launch(start = CoroutineStart.LAZY) {
+//                    Log.d("coroutineThread1", "${Thread.currentThread().name}")
+//                    text.text = "메인 스레드에서 실행중..."
+//                    delay(3000)
+//                }
+//
+//                val job2 = launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+//                    Log.d("coroutineThread2", "${Thread.currentThread().name}")
+//                    delay(3000)
+//                }
+//
+//                job2.join()
+//                job1.join()
+//
+//                text.text = "lifecycleScope 종료..."
+//            }
 
-            vm.text.observe(this@MainActivity) {
-                text.text = it
-            }
 
-            text.text = "계속 작업이 수행돼고 음"
         }
     }
 }

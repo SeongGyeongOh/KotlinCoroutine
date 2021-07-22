@@ -1,6 +1,5 @@
 package com.example.practicecoroutine
 
-import android.provider.Settings
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -99,21 +98,61 @@ class ExampleUnitTest {
      */
     @Test
     fun main() {
+        basicCoroutine()
+
         //코루틴은 루틴에 대한 진입 / 탈출 지점이 여러개이다
-        //코루틴이 돌아가는 스레드가 종료되면 해당 코루틴도 종료된다
         testSuspend()
+
+        //non-blocking
+        //코루틴이 돌아가는 스레드가 종료되면 해당 코루틴도 종료된다
+        coroutineInThread()
+
+        //blocking
+        //runBlocking을 사용하여 스레드를 정지시킬 수 있음
+        testRunBlocking()
+
+        //스레드는 선점형 멀티태스킹이다
+        testThread()
+
+        //코루틴은 비선점형 멀티태스킹이다
+        testCoroutine()
 
         //기본적으로 코루틴 scope안의 코드는 순차적으로 진행된다
         testSequential()
 
         //동시성을 띄고 싶으면 async를 사용한다
-        //코틀린 코루틴의 async -
         testAsync()
+
+        //launch와 async의 차이
+        launchAndAsync()
+
+        //코루틴 지연 - start = CoroutineStart.LAZY를 사용하여 scope 내의 코드 진행을 원하는 때에 실행할 수 있다
+        testNonLazy()
+        testLazy()
+
+        //코루틴 취소
+        testCancel()
     }
 
     @Test
+    fun basicCoroutine(): Unit = runBlocking {
+        val mainScope = CoroutineScope(Dispatchers.IO) // CoroutincContext를 지정하여 scope 생성
+        mainScope.launch { // 코루틴 빌더
+            //코루틴 코드
+            println("비동기적 작업을 실행하는 코드입니다")
+            println("${Thread.currentThread().name}")
+        }
+
+        launch(Dispatchers.Default) {
+            println("비동기적 작업을 실행하는 코드입니다2")
+            println("${Thread.currentThread().name}")
+        }
+    }
+
+    //코루틴은 루틴에 대한 진입 / 탈출 지점이 여러개이다
+    @Test
     fun testSuspend() {
-        GlobalScope.launch {
+        CoroutineScope(Dispatchers.Default).launch {
             aa()
             bb()
         }
@@ -123,54 +162,6 @@ class ExampleUnitTest {
         println("coroutine 2차 탈출")
         Thread.sleep(2500)
         println("coroutine 마지막 탈출")
-    }
-
-    @Test
-    fun testSequential() {
-        runBlocking {
-            val time = measureTimeMillis {
-                val a = aa()
-                val b = bb()
-                println("a + b =  ${a + b}")
-            }
-            println("순차적 소요시간 $time")
-        }
-    }
-
-    @Test
-    fun testAsync() {
-        runBlocking {
-            val time = measureTimeMillis {
-                val a = async { aa() }
-                val b = async { bb() }
-                println("${a.await() + b.await()}")
-            }
-            println("동시 소요시간 $time")
-        }
-    }
-
-    @Test
-    fun launchAndAsync() = runBlocking {
-        //launch는 Job 객체를 반환한다
-        //launch는 값을 리턴할 수 없다
-        val job = GlobalScope.launch {
-            delay(1000)
-            println("coroutine - launch")
-        }
-
-        job.cancel()
-        println("launch 와 async 사이")
-
-        //async는 Deferred 객체를 반환하다
-        //async는 값을 반환할 수 있다
-        val deferred = GlobalScope.async {
-            delay(1000)
-            println("coroutine - async")
-            return@async 10          //실행 가능 코드
-        }
-
-        deferred.await()
-        println("async 리턴값 확인 ${deferred.await()}")
     }
 
     suspend fun aa(): Int {
@@ -183,6 +174,34 @@ class ExampleUnitTest {
         delay(1000)
         println("bb()")
         return 5
+    }
+
+    //non-blocking
+    //코루틴이 돌아가는 스레드가 종료되면 해당 코루틴도 종료된다
+    @Test
+    fun coroutineInThread() {
+        CoroutineScope(Dispatchers.Default).launch {
+            repeat(10) {
+                println(it)
+                delay(200)
+            }
+        }
+
+        Thread.sleep(1000)
+        println("thread 종료")
+    }
+
+
+    //blocking
+    //runBlocking을 사용하여 스레드를 정지시킬 수 있음
+    @Test
+    fun testRunBlocking() = runBlocking {
+        repeat(10) {
+            println(it)
+            delay(200)
+        }
+
+        println("thread 종료")
     }
 
     //스레드는 선점형 멀티태스킹을 한다
@@ -223,39 +242,122 @@ class ExampleUnitTest {
         }
     }
 
-//    @Test
-//    fun launchAndAsync() {
-//        runBlocking {
-//            withContext(Dispatchers.Default) {
-//                delay(2000)
-//                println("async처럼 동작하게")
-//            }
-//
-//            val value: Int = withContext(Dispatchers.Default) {
-//                delay(1500)
-//                1 + 2
-//            }
-//
-//            launch {
-//                delay(300)
-//                println("Launch has NO return value")
-//            }
-//
-//            println("순서대로 실행되는 코루틴 블럭")
-//            println("Async has return value: $value")
-//        }
-//    }
+    //기본적으로 코루틴 scope 안의 코드는 순차적으로 진행된다
+    @Test
+    fun testSequential() {
+        runBlocking {
+            val time = measureTimeMillis {
+                val a = aa()
+                val b = bb()
+                println("a + b =  ${a + b}")
+            }
+            println("소요시간 $time")
+        }
+    }
+
+    //동시성을 띄고 싶으면 async를 사용한다
+    @Test
+    fun testAsync() {
+        runBlocking {
+            val time = measureTimeMillis {
+                val a = async { aa() }
+                val b = async { bb() }
+                println("${a.await() + b.await()}")
+            }
+            println("소요시간 $time")
+        }
+    }
+
+    //launch와 async의 차이
+    @Test
+    fun launchAndAsync() = runBlocking {
+        //launch는 Job 객체를 반환한다
+        //launch는 결과값을 리턴할 수 없다
+        val job: Job = CoroutineScope(Dispatchers.Default).launch {
+            delay(1000)
+            println("coroutine - launch")
+        }
+        job.join()
+
+        //async는 Deferred 객체를 반환하다
+        //async는 결과값을 반환할 수 있다
+        val deferred: Deferred<Int> = CoroutineScope(Dispatchers.Default).async {
+            delay(1000)
+            println("coroutine - async")
+            10
+        }
+        deferred.await()
+        println("async 리턴값 확인 ${deferred.await()}")
+    }
+
+    //코루틴 지연 - start = CoroutineStart.LAZY를 사용하여 scope 내의 코드 진행을 원하는 때에 실행할 수 있다
+    @Test
+    fun testNonLazy(): Unit = runBlocking {
+        launch {
+            delay(3000)
+            println("launch1 실행됨")
+        }
+
+        launch {
+            delay(1000)
+            println("launch2 실행됨")
+        }
+
+        async {
+            delay(2000)
+            println("async1 실행")
+        }
+
+        val a = async {
+            delay(500)
+            println("async2 실행")
+            "asdf"
+        }
+    }
 
     @Test
-    fun coroutineInThread() = runBlocking {
-        GlobalScope.launch {
-            repeat(10) {
-                print(it)
-                delay(200)
+    fun testLazy() = runBlocking {
+        val job1 = launch(start = CoroutineStart.LAZY) {
+            delay(3000)
+            println("job1 실행됨")
+        }
+
+        val job2 = launch(start = CoroutineStart.LAZY) {
+            delay(1000)
+            println("job2 실행됨")
+        }
+
+        job1.join()
+        job2.join()
+
+        println()
+
+        val deferred1 = async(start = CoroutineStart.LAZY) {
+            delay(2000)
+            println("deferred1 실행됨")
+            "동기를"
+        }
+
+        val deferred2 = async(start = CoroutineStart.LAZY) {
+            delay(500)
+            println("deferred2 실행됨")
+            " 맞춥시다"
+        }
+
+        println(deferred1.await() + deferred2.await())
+    }
+
+    @Test
+    fun testCancel() = runBlocking {
+        val job = launch {
+            repeat(100) {
+                println(it)
+                delay(500)
             }
         }
 
-        delay(1000)
+        delay(5000)
+        job.cancel()
     }
 }
 
