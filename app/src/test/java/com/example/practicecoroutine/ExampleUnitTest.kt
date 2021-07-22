@@ -136,7 +136,8 @@ class ExampleUnitTest {
 
     @Test
     fun basicCoroutine(): Unit = runBlocking {
-        val mainScope = CoroutineScope(Dispatchers.IO) // CoroutincContext를 지정하여 scope 생성
+        val job = Job()
+        val mainScope = CoroutineScope(Dispatchers.IO + job) // CoroutincContext를 지정하여 scope 생성
         mainScope.launch { // 코루틴 빌더
             //코루틴 코드
             println("비동기적 작업을 실행하는 코드입니다")
@@ -152,7 +153,10 @@ class ExampleUnitTest {
     //코루틴은 루틴에 대한 진입 / 탈출 지점이 여러개이다
     @Test
     fun testSuspend() {
+        //하나의 스레드가 실행되며 suspend function을 만나면 해당 함수를 잠시 지연하고 코루틴 블록을 탈출, 그 아래의 코드를 실행한다
+        //suspend의 작업이 끝나면 다시 작업이 정지된 시점으로 돌아와 코루틴을 계속 실행한다
         CoroutineScope(Dispatchers.Default).launch {
+            init()
             aa()
             bb()
         }
@@ -162,6 +166,10 @@ class ExampleUnitTest {
         println("coroutine 2차 탈출")
         Thread.sleep(2500)
         println("coroutine 마지막 탈출")
+    }
+
+    fun init() {
+        println("init()")
     }
 
     suspend fun aa(): Int {
