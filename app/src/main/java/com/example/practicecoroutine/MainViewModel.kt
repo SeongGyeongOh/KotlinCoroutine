@@ -1,48 +1,48 @@
 package com.example.practicecoroutine
 
-import androidx.lifecycle.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor() : ViewModel() {
-    val scope = CoroutineScope(Dispatchers.Default)
-    val _text = MutableLiveData<String>()
-    val text: LiveData<String> get() = _text
+    private val _stateFlow = MutableStateFlow("가나다라마바사")
+    val stateFlow: StateFlow<String> = _stateFlow
+
+    private val _sharedFlow = MutableSharedFlow<String>()
+    val sharedFlow: SharedFlow<String> = _sharedFlow
 
     init {
-        testSuspend()
+        changeStateFlow()
+        changeSharedFlow()
     }
 
-    private fun testSuspend() {
-        scope.launch {
-            val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-                aa()
-                _text.value = "aa bb 사이"
-                bb()
-            }
-//            _text.postValue("시끄럽게")
-            delay(1000)
-            job.start()
-        }
-
-        scope.launch(Dispatchers.IO) {
-//            bb()
-        }
+    fun setStateFlow(value: String) {
+        _stateFlow.value = value
     }
 
-    suspend fun aa() {
-        _text.value = "오리는"
-        delay(3000)
-        _text.value = "꽥꽥"
+    fun setSharedFlow(value: String) = viewModelScope.launch {
+        _sharedFlow.emit(value)
+    }
+
+    private fun changeStateFlow() = viewModelScope.launch {
         delay(1000)
+        _stateFlow.value = "0"
+        delay(1000)
+        _stateFlow.value = "1"
     }
 
-    suspend fun bb() {
-        _text.postValue("고양이는")
+    private fun changeSharedFlow() = viewModelScope.launch {
         delay(1000)
-        _text.postValue("야옹")
+        _sharedFlow.emit("0")
+        delay(1000)
+        _sharedFlow.emit("1")
     }
 }

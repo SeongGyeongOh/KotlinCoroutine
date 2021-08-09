@@ -1,54 +1,126 @@
 package com.example.practicecoroutine
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.view.ViewStub
-import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.asLiveData
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.practicecoroutine.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
-import java.net.Socket
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
+    lateinit var binding: ActivityMainBinding
     private val vm: MainViewModel by viewModels()
 
     @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        Log.d("currentThread", "${Thread.currentThread().name}")
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
 
-        btn.setOnClickListener {
-//            lifecycleScope.launch {
-//                val job1 = launch(start = CoroutineStart.LAZY) {
-//                    Log.d("coroutineThread1", "${Thread.currentThread().name}")
-//                    text.text = "메인 스레드에서 실행중..."
-//                    delay(3000)
-//                }
+//        vm.setStateFlow("아아아")
+//        vm.setSharedFlow("??")
+
+        /**
+         * flow to liveData
+         */
+//        lifecycleScope.launch {
+//            vm.setStateFlow("아아아")
+//            vm.stateFlow.asLiveData().observe(this@MainActivity, Observer {
+//                binding.mainText.text = it
+//            })
 //
-//                val job2 = launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
-//                    Log.d("coroutineThread2", "${Thread.currentThread().name}")
-//                    delay(3000)
-//                }
-//
-//                job2.join()
-//                job1.join()
-//
-//                text.text = "lifecycleScope 종료..."
+//            vm.setSharedFlow("??")
+//            vm.sharedFlow.asLiveData().observe(this@MainActivity, Observer {
+//                binding.mainText2.text = it
+//            })
+//        }
+
+        /**
+         * use separate coroutineScope
+         */
+//        lifecycleScope.launch {
+//            vm.setStateFlow("아아아")
+//            vm.stateFlow. collect {
+//                binding.mainText.text = it
 //            }
+//        }
+//
+//        lifecycleScope.launch {
+//            vm.setSharedFlow("??")
+//            vm.sharedFlow.collect {
+//                binding.mainText2.text = it
+//            }
+//        }
 
+        /**
+         * use repeatOnLifecycle
+         * **** UI에서 flow를 collect할 때 필수적으로 사용할 것
+         * 사용하지 않을 시 UI의 라이프사이클이 끝나는 때 flow를 직접 없애는 작업을 해야한
+         */
+        val job = lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.stateFlow. collect {
+                        binding.mainText.text = it
+                    }
+                }
 
+                launch {
+                    vm.sharedFlow.collect {
+                        binding.mainText2.text = it
+                    }
+                }
+            }
         }
+
+        /**
+         * use merge
+         */
+//        lifecycleScope.launch {
+//            merge(
+//                vm.stateFlow, vm.sharedFlow
+//            ).collect {
+//                Log.d("flow_merge", "$it")
+//
+//            }
+//        }
+
+        /**
+         * use combine
+         */
+//        lifecycleScope.launch {
+//            combine(vm.stateFlow, vm.sharedFlow) { state, shared ->
+//                state + shared
+//            }.collect {
+//                binding.mainText.text = it
+//                binding.mainText2.text = it
+//            }
+//        }
+
+        /**
+         * use flowWithLifecycle
+         */
+//        lifecycleScope.launch {
+////            vm.setStateFlow("아아아")
+//            vm.stateFlow.flowWithLifecycle(lifecycle = lifecycle, minActiveState = Lifecycle.State.STARTED)
+//                    .collect {
+//                        binding.mainText.text = it
+//                    }
+//
+//            vm.sharedFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
+//                    .collect {
+//                        binding.mainText2.text = it
+//                    }
+//        }
+
+        setContentView(view)
     }
 }
