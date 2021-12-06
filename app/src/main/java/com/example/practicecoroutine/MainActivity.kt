@@ -23,7 +23,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
+
         val view = binding.root
+
+
 
 //        vm.setStateFlow("아아아")
 //        vm.setSharedFlow("??")
@@ -64,22 +67,24 @@ class MainActivity : AppCompatActivity() {
          * use repeatOnLifecycle
          * **** UI에서 flow를 collect할 때 필수적으로 사용할 것
          * 사용하지 않을 시 UI의 라이프사이클이 끝나는 때 flow를 직접 없애는 작업을 해야한
+         * 사용하려면 lifecycle dependency를
+         * implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.4.0-alpha03" 로 사용해야함
          */
-        val job = lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    vm.stateFlow. collect {
-                        binding.mainText.text = it
-                    }
-                }
-
-                launch {
-                    vm.sharedFlow.collect {
-                        binding.mainText2.text = it
-                    }
-                }
-            }
-        }
+//        val job = lifecycleScope.launch {
+//            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                launch {
+//                    vm.stateFlow. collect {
+//                        binding.mainText.text = it
+//                    }
+//                }
+//
+//                launch {
+//                    vm.sharedFlow.collect {
+//                        binding.mainText2.text = it
+//                    }
+//                }
+//            }
+//        }
 
         /**
          * use merge

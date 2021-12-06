@@ -51,6 +51,13 @@ class LiveDataFlowTest {
         }
     }
 
+    private suspend fun stateFlowTest(): StateFlow<Int> = flow {
+        for (i in 1..3) {
+            delay(1000)
+            emit(i)
+        }
+    }.stateIn(CoroutineScope(Dispatchers.Default))
+
     @FlowPreview
     private fun asFlowTest() = listOf(1, 2, 3).asFlow()
 
